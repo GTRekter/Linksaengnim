@@ -24,7 +24,7 @@ Linkerd provides fine‑grained timeout settings to control the lifecycle of HTT
 Use k3d and your cluster.yaml to spin up a lightweight Kubernetes cluster:
 
 ```
-k3d cluster create my-linkerd-cluster \
+k3d cluster create cluster \
   --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
