@@ -25,5 +25,5 @@ ports:
   - port: 8081:80
     nodeFilters: ["loadbalancer"]
 volumes:
-  - volume: "./audit-policy.yaml:/etc/rancher/k3s/audit-policy.yaml"
+  - volume: "/Users/gtrekter/Repositories/Linksaengnim/02-controlplane/audit-policy.yaml:/etc/rancher/k3s/audit-policy.yaml"
     nodeFilters: ["server:*"]

@@ -25,8 +25,7 @@ The Control Plane and the proxies communicate via gRPC, while the proxies commun
 Use k3d and your cluster.yaml to spin up a lightweight Kubernetes cluster:
 
 ```
-k3d cluster create cluster \
-  --kubeconfig-update-default \
+k3d cluster create --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
 
