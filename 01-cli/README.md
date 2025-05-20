@@ -1,4 +1,4 @@
-# Linekrd CLI
+# Linkerd CLI
 
 The Linkerd maintainers have developed a rich CLI that allows you to easily install Linkerd CRDs, control plane components, and manage extensions directly from the command line.
 
