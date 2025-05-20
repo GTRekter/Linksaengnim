@@ -13,7 +13,7 @@ The Linkerd maintainers have developed a rich CLI that allows you to easily inst
 
 # Tutorial
 
-1. Create a Local Kubernetes Cluster
+## 1. Create a Local Kubernetes Cluster
 
 Use k3d and the `cluster.yaml` to spin up a lightweight Kubernetes cluster:
 
@@ -23,7 +23,7 @@ k3d cluster create cluster \
   -c ./cluster.yaml
 ```
 
-2. Configure the Linkerd CLI
+## 2. Configure the Linkerd CLI
 
 The Linkerd CLI has two parameters you can define to specify the version to install and the path where the binaries will be installed:
 
@@ -59,8 +59,7 @@ dstfile="${INSTALLROOT}/bin/linkerd-${LINKERD2_VERSION}"
 url="https://github.com/linkerd/linkerd2/releases/download/${LINKERD2_VERSION}/${srcfile}"
 ```
 
-
-3. Explore the CLI
+## 3. Explore the CLI
 
 The CLI has a lot of functionality, and the maintainers are constantly working to enhance it. You can list all available commands by running `linkerd help`:
 
@@ -116,7 +115,7 @@ Global Flags:
       --verbose                    Turn on debug logging
 ```
 
-4. Install Linkerd on Your Cluster
+## 4. Install Linkerd on Your Cluster
 
 To install Linkerd, you must first install the CRDs required by the control plane, starting with the API Gateway CRDs, then the Linkerd CRDs, and finally the control plane itself. The `linkerd install` command output the YAML manifest but do not apply it directly. You will need to pipe the output to `kubectl apply`.
 
@@ -128,3 +127,125 @@ linkerd install | kubectl apply -f -
 
 **Note:** Prior to 2.18, Linkerd provided its own version of the API Gateway, but it was limited by dependencies tied to version 0.7, which posed an issue when third-party tools like Kong Gateway required a different version. To solve this, the maintainers decoupled them so that, starting with 2.18, Linkerd supports Gateway API versions from 1.0.0 onward and will require users to install it separatly. Running API Gateway 1.2.0 on a Linkerd version prior to 2.18 will break the control plane, since the policy controller watches for a specific version of the gRPCRoute Gateway API, which is not provided in 1.2.0.
 
+If we check the API Resouces we will see both API Gateway and Linkerd resources.
+
+```
+kubectl api-resources 
+NAME                                SHORTNAMES                 APIVERSION                          NAMESPACED   KIND
+...
+gatewayclasses                      gc                         gateway.networking.k8s.io/v1        false        GatewayClass
+gateways                            gtw                        gateway.networking.k8s.io/v1        true         Gateway
+grpcroutes                                                     gateway.networking.k8s.io/v1        true         GRPCRoute
+httproutes                                                     gateway.networking.k8s.io/v1        true         HTTPRoute
+referencegrants                     refgrant                   gateway.networking.k8s.io/v1beta1   true         ReferenceGrant
+...
+serviceprofiles                     sp                         linkerd.io/v1alpha2                 true         ServiceProfile
+...
+authorizationpolicies               authzpolicy                policy.linkerd.io/v1alpha1          true         AuthorizationPolicy
+egressnetworks                                                 policy.linkerd.io/v1alpha1          true         EgressNetwork
+httplocalratelimitpolicies                                     policy.linkerd.io/v1alpha1          true         HTTPLocalRateLimitPolicy
+httproutes                                                     policy.linkerd.io/v1beta3           true         HTTPRoute
+meshtlsauthentications              meshtlsauthn               policy.linkerd.io/v1alpha1          true         MeshTLSAuthentication
+networkauthentications              netauthn,networkauthn      policy.linkerd.io/v1alpha1          true         NetworkAuthentication
+serverauthorizations                saz,serverauthz,srvauthz   policy.linkerd.io/v1beta1           true         ServerAuthorization
+servers                             srv                        policy.linkerd.io/v1beta3           true         Server
+...
+externalworkloads                                              workload.linkerd.io/v1beta1         true         ExternalWorkload
+```
+
+The same applies to the CRDs using these APIs.
+
+```
+kubectl get crds -A
+NAME                                           CREATED AT
+addons.k3s.cattle.io                           2025-05-20T04:54:40Z
+authorizationpolicies.policy.linkerd.io        2025-05-20T05:18:06Z
+egressnetworks.policy.linkerd.io               2025-05-20T05:18:07Z
+externalworkloads.workload.linkerd.io          2025-05-20T05:18:07Z
+gatewayclasses.gateway.networking.k8s.io       2025-05-20T05:16:36Z
+gateways.gateway.networking.k8s.io             2025-05-20T05:16:36Z
+grpcroutes.gateway.networking.k8s.io           2025-05-20T05:16:36Z
+httplocalratelimitpolicies.policy.linkerd.io   2025-05-20T05:18:07Z
+httproutes.gateway.networking.k8s.io           2025-05-20T05:16:36Z
+httproutes.policy.linkerd.io                   2025-05-20T05:18:07Z
+meshtlsauthentications.policy.linkerd.io       2025-05-20T05:18:07Z
+networkauthentications.policy.linkerd.io       2025-05-20T05:18:07Z
+referencegrants.gateway.networking.k8s.io      2025-05-20T05:16:36Z
+serverauthorizations.policy.linkerd.io         2025-05-20T05:18:07Z
+servers.policy.linkerd.io                      2025-05-20T05:18:07Z
+serviceprofiles.linkerd.io                     2025-05-20T05:18:07Z
+```
+
+One important thing to highlight is that each CRD might serve multiple versions of the same API, which are not immeditly visible in the table. However, if we describe the CRD resource, you will see those multiple versions.
+
+```
+kubectl describe crd servers.policy.linkerd.io
+Name:         servers.policy.linkerd.io
+Namespace:    
+Labels:       helm.sh/chart=linkerd-crds-0.0.0-undefined
+              linkerd.io/control-plane-ns=linkerd
+Annotations:  linkerd.io/created-by: linkerd/cli edge-25.5.3
+API Version:  apiextensions.k8s.io/v1
+Kind:         CustomResourceDefinition
+Metadata:
+  Creation Timestamp:  2025-05-20T05:18:07Z
+  Generation:          1
+  Resource Version:    961
+  UID:                 7b046714-27b4-4d19-8292-6651025ff071
+Spec:
+  Conversion:
+    Strategy:  None
+  Group:       policy.linkerd.io
+  Names:
+    Kind:       Server
+    List Kind:  ServerList
+    Plural:     servers
+    Short Names:
+      srv
+    Singular:  server
+  Scope:       Namespaced
+  Versions:
+    Deprecated:           true
+    Deprecation Warning:  policy.linkerd.io/v1alpha1 Server is deprecated; use policy.linkerd.io/v1beta1 Server
+    Name:                 v1alpha1
+    Schema:
+      openAPIV3Schema:
+      ...
+    Served:    true
+    Storage:   false
+    ...
+    Deprecated:           true
+    Deprecation Warning:  policy.linkerd.io/v1beta1 Server is deprecated; use policy.linkerd.io/v1beta3 Server
+    Name:                 v1beta1
+    Schema:
+      openAPIV3Schema:
+      ...
+    Served:    true
+    Storage:   false
+    ...
+    Name:           v1beta2
+    Schema:
+      openAPIV3Schema:
+      ...
+    Served:    true
+    Storage:   false
+    
+```
+
+Finally, if you check the deployments and pods running in the linkerd namespace, you will see the `linkerd-destination`, `linkerd-identity`, and `linkerd-proxy-injector` running:
+
+```
+kubectl get deploy -n linkerd
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+linkerd-destination      1/1     1            1           28m
+linkerd-identity         1/1     1            1           28m
+linkerd-proxy-injector   1/1     1            1           28m
+
+kubectl get pods -n linkerd 
+NAME                                      READY   STATUS    RESTARTS   AGE
+linkerd-destination-75f4bc85cd-fswvp      4/4     Running   0          28m
+linkerd-identity-9bf7d8b86-zmkb2          2/2     Running   0          28m
+linkerd-proxy-injector-5d5687794c-4kmhs   2/2     Running   0          28m
+```
+
+During the course, we will dig more into the various commands. But for this first module, we will stop here.
