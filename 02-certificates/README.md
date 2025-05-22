@@ -108,7 +108,7 @@ Here, identity carries the SPIFFE ID (spiffe://<trust-domain>/ns/<ns>/sa/<sa>) a
 
 ## 3. The Identity Intermediate Issuer Certificate
 
-The intermediate issuer certificate is stored in the linkerd-identity-issuer secret in the linkerd namespace. When the Identity service receives a CSR, it first validates the token by creating a TokenReview against the Kubernetes API with:
+The intermediate issuer certificate is stored in the `linkerd-identity-issuer` secret in the `linkerd` namespace. When the Identity service receives a CSR, it first validates the token by creating a `TokenReview` against the `authentication.k8s.io/v1/tokenreviews` endpoint of the Kubernetes API with:
 - The ServiceAccount token from the CSR 
 - The `identity.l5d.io` audience. (The audience restriction ensures only tokens issued for Linkerd are accepted.)
 
