@@ -6,8 +6,10 @@ Linkerd automatically enable mTLS for all TCP traffic between meshed pods. To do
 - https://linkerd.io/2-edge/tasks/generate-certificates/
 - https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/
 - https://github.com/linkerd/linkerd2-proxy/blob/main/linkerd/proxy/identity-client/src/certify.rs
+- https://github.com/linkerd/linkerd2-proxy/blob/main/linkerd/proxy/spire-client/src/lib.rs
 - https://github.com/linkerd/linkerd2-proxy/blob/main/linkerd/app/src/identity.rs
 - https://github.com/linkerd/linkerd2/blob/main/controller/identity/validator.go
+- https://github.com/linkerd/linkerd2/blob/main/proxy-identity/main.go
 
 # Prerequisites
 
@@ -63,10 +65,46 @@ Volumes:
     SizeLimit:   <unset>
 ```
 
-When the Proxy starts, it reads its own ServiceAccount and the LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS certificate. Then it will build a `rcgen::CertificateParams struct` that will later become the Certificate Signing Request sent to Identity for the workloaf Leaf certificate with:
-- SAN (Subject Alternative Name) of type URI—the SPIFFE ID of the pod `spiffe://<trust-domain>/ns/<namespace>/sa/<service-account>`
-- An ECDSA P-256 key algorithm (PKCS_ECDSA_P256_SHA256).
-The CSR is then sent in the gRPC CertifyRequest to the Identity service.
+When the Linkerd proxy starts, it loads the trust anchors the certificate defined by `LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS`. Then it will ensure that the directory at `LINKERD2_PROXY_IDENTITY_DIR` exists and generate both public and ECDSA P-256 private key, encodes it to PKCS#8 PEM, and writes it as `key.p8`. 
+```
+func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
+    key, err = tls.GenerateKey()
+    if err != nil {
+        return
+    }
+    pemb := tls.EncodePrivateKeyP8(key)
+    err = os.WriteFile(p, pemb, 0600)
+    return
+}
+```
+Then it generates X.509 CSR with the Common Name and DNS SAN, and writes it as `csr.der`.
+```
+func generateAndStoreCSR(p, id string, key *ecdsa.PrivateKey) ([]byte, error) {
+    csr := x509.CertificateRequest{
+        Subject:  pkix.Name{CommonName: id},
+        DNSNames: []string{id},
+    }
+    csrb, err := x509.CreateCertificateRequest(rand.Reader, &csr, key)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create CSR: %w", err)
+    }
+    if err := os.WriteFile(p, csrb, 0600); err != nil {
+        return nil, fmt.Errorf("failed to write CSR: %w", err)
+    }
+    return csrb, nil
+}
+```
+Then the Rust binary starts and read the service-account JWT via `TokenSource::load()`, loads both Trust Anchors and the two files previously generated (key.p8, csr.der) and attaches the raw CSR bytes to a gRPC request:
+```
+let req = tonic::Request::new(api::CertifyRequest {
+  token: token.load()?,                   
+  identity: name.to_string(),               
+  certificate_signing_request: docs.csr_der.clone(),
+});
+let api::CertifyResponse { leaf_certificate, intermediate_certificates, valid_until } =
+  IdentityClient::new(client).certify(req).await?.into_inner();
+```
+Here, identity carries the SPIFFE ID (spiffe://<trust-domain>/ns/<ns>/sa/<sa>) and the control-plane uses that to issue you a cert whose URI SAN is set to your SPIFFE ID—the CSR’s own SANs are ignored for URI purposes.
 
 ## 3. The Identity Intermediate Issuer Certificate
 
