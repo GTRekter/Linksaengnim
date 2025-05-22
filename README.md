@@ -4,6 +4,7 @@ This repository contains multiple modules to help you deepen your knowledge of L
 
 | Module | Directory | Description |
 | --- | --- | --- |
-| 01 | 01-installation | Steps to install Linkerd in a local Kubernetes cluster using k3d and Helm. 
-| 02 | 02-service-mesh | Overview of Linkerd features and basic service mesh concepts.
-| 03 | 03-timeouts | Configuration and examples for fine‑grained timeout policies (request, response, idle).
+| 01 | 01-cli | Introduction to the Linkerd CLI.
+| 02 | 02-certificates | Details of how Linkerd generates and manages certificates.
+| 03 | 03-proxy-init | Details of how Linkerd updates the route tables to redirect all inbound and outbound traffic to specific ports.
+| 04 | 04-control-plane | Details of the behavior of each component of the Linkerd control plane.
