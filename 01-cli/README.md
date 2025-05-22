@@ -18,8 +18,7 @@ The Linkerd maintainers have developed a rich CLI that allows you to easily inst
 Use k3d and the `cluster.yaml` to spin up a lightweight Kubernetes cluster:
 
 ```
-k3d cluster create cluster \
-  --kubeconfig-update-default \
+k3d cluster create --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
 
