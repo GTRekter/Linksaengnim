@@ -1,8 +1,8 @@
-# Certificates
+# 인증서
 
-Linkerd automatically enable mTLS for all TCP traffic between meshed pods. To do so, it relies on several certificates that should be in place for the control plane to work as expected. You can either provide them during the installation or using thirds party tools like Cert-Manager and Trust-Manager. 
+Linkerd는 메시에 참여한 파드 간 모든 TCP 트래픽에 대해 mTLS를 자동으로 활성화합니다. 이를 위해 컨트롤 플레인이 올바르게 동작하려면 몇 가지 인증서가 필요합니다. 인증서는 설치 시 직접 제공하거나, Cert-Manager·Trust-Manager 같은 서드파티 도구로 관리할 수 있습니다.
 
-## References
+## 참고 링크
 - https://linkerd.io/2-edge/tasks/generate-certificates/
 - https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/
 - https://github.com/linkerd/linkerd2-proxy/blob/main/linkerd/proxy/identity-client/src/certify.rs
@@ -11,26 +11,26 @@ Linkerd automatically enable mTLS for all TCP traffic between meshed pods. To do
 - https://github.com/linkerd/linkerd2/blob/main/controller/identity/validator.go
 - https://github.com/linkerd/linkerd2/blob/main/proxy-identity/main.go
 
-# Prerequisites
+# 필요 조건
 
-- macOS/Linux/Windows with a Unix‑style shell
-- k3d (v5+) for local Kubernetes clusters
+- Unix-스타일 셸이 가능한 macOS/Linux/Windows
+- 로컬 Kubernetes 클러스터용 k3d (v5+)
 - kubectl (v1.25+)
 
-# Tutorial
+# 튜토리얼
 
-## 1. Create a Local Kubernetes Cluster
+## 1. 로컬 Kubernetes 클러스터 생성
 
-Use k3d and the `cluster.yaml` to spin up a lightweight Kubernetes cluster:
+`cluster.yaml`을 사용해 k3d로 경량 Kubernetes 클러스터를 띄웁니다.
 
 ```
 k3d cluster create --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
 
-## 2. Generate Identity Certificates
+## 2. 아이덴티티(Identity) 인증서 생성
 
-Linkerd requires a trust anchor (root CA) and an issuer (intermediate CA) for mTLS identity.
+Linkerd mTLS에는 신뢰 앵커(루트 CA) 와 발급자(중간 CA) 가 필요합니다.
 
 ```
 step certificate create root.linkerd.cluster.local ./certificates/ca.crt ./certificates/ca.key \
@@ -46,7 +46,7 @@ step certificate create identity.linkerd.cluster.local ./certificates/issuer.crt
     --ca-key ./certificates/ca.key
 ```
 
-## 3. Install Linkerd via Helm
+## 3. Helm으로 Linkerd 설치
 
 ```
 helm repo add linkerd-edge https://helm.linkerd.io/edge
@@ -64,13 +64,13 @@ helm upgrade --install linkerd-control-plane \
   linkerd-edge/linkerd-control-plane
 ```
 
-## 3. The Root Trust Anchor Certificate
+## 3. 루트 신뢰 앵커(Root Trust Anchor) 인증서
 
-Linkerd’s Root Trust Anchor is a public CA certificate that establishes the ultimate point of trust for all service-mesh certificates. It never issues workload certificates directly. Instead, it signs intermediate CA certificates, which in turn issue certificates for workloads. This division ensures that clusters (or multiple clusters) can each run their own issuer yet validate against the same root anchor, maintaining mesh-wide trust without exposing the root key in day-to-day workflows.
+Linkerd의 루트 신뢰 앵커는 서비스 메시 내 모든 인증서의 최종 신뢰 지점을 제공하는 공개 CA 인증서입니다. 이 인증서는 직접 워크로드 인증서를 발급하지 않고, 대신 중간 CA 를 서명하여 워크로드 인증서를 발급하도록 위임합니다. 이렇게 하면 여러 클러스터가 각자 발급자를 운영하면서도 동일한 루트 앵커를 통해 메시 전반의 신뢰를 유지할 수 있으며, 루트 키를 일상 업무에 노출하지 않아도 됩니다.
 
-The Root Trust Anchor certificate (containing only the public key) is stored in the ConfigMap named `linkerd-identity-trust-roots`. Since this ConfigMap holds no private key material, it’s safe to store it in plain view and use it to bootstrap trust for all intermediates and end-entity certificates. It's common that enterprises will use their own PKI that will then use to generate a new intermediate.
+루트 앵커 인증서(공개키만 포함)는 `linkerd-identity-trust-roots`라는 ConfigMap 에 저장됩니다. 비밀 키가 없으므로 공개 저장이 가능하며, 모든 중간·엔티티 인증서의 신뢰 부트스트랩에 사용됩니다. 기업 환경에서는 자체 PKI로 중간 CA를 생성하여 이 루트에 연결하는 경우가 많습니다.
 
-When a new Linkerd proxy is injected into a workload pod, it receives the trust configuration through environment variables and mounted volumes.
+새 Linkerd 프록시가 워크로드 파드에 주입(inject)되면, 환경 변수와 볼륨을 통해 신뢰 구성을 전달받습니다.
 
 ```
 linkerd-proxy:
@@ -101,7 +101,8 @@ Volumes:
     SizeLimit:   <unset>
 ```
 
-When the Linkerd proxy starts, it loads the trust anchors the certificate defined by `LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS`. Then it will ensure that the directory at `LINKERD2_PROXY_IDENTITY_DIR` exists and generate both public and ECDSA P-256 private key, encodes it to PKCS#8 PEM, and writes it as `key.p8`. 
+프록시가 시작되면 `LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS`로 지정된 앵커를 로드합니다. 다음으로 `LINKERD2_PROXY_IDENTITY_DIR` 아래에 디렉터리를 만들고, ECDSA P-256 개인키를 생성하여 PKCS#8 PEM 으로 인코딩한 뒤 `key.p8`로 저장합니다.
+
 ```
 func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
     key, err = tls.GenerateKey()
@@ -113,7 +114,9 @@ func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
     return
 }
 ```
-Then it generates X.509 CSR with the Common Name and DNS SAN, and writes it as `csr.der`.
+
+그다음, CSR을 생성해 `csr.der`로 저장합니다.
+
 ```
 func generateAndStoreCSR(p, id string, key *ecdsa.PrivateKey) ([]byte, error) {
     csr := x509.CertificateRequest{
@@ -130,7 +133,9 @@ func generateAndStoreCSR(p, id string, key *ecdsa.PrivateKey) ([]byte, error) {
     return csrb, nil
 }
 ```
-Then the Rust binary starts and read the service-account JWT via `TokenSource::load()`, loads both Trust Anchors and the two files previously generated (key.p8, csr.der) and attaches the raw CSR bytes to a gRPC request:
+
+Rust 바이너리는 `TokenSource::load()`로 서비스 계정 JWT 를 읽고, 신뢰 앵커·key.p8·csr.der를 로드한 뒤 CSR을 gRPC 요청에 첨부합니다.
+
 ```
 let req = tonic::Request::new(api::CertifyRequest {
   token: token.load()?,                   
@@ -140,26 +145,29 @@ let req = tonic::Request::new(api::CertifyRequest {
 let api::CertifyResponse { leaf_certificate, intermediate_certificates, valid_until } =
   IdentityClient::new(client).certify(req).await?.into_inner();
 ```
-Here, identity carries the SPIFFE ID (spiffe://<trust-domain>/ns/<ns>/sa/<sa>) and the control-plane uses that to issue you a cert whose URI SAN is set to your SPIFFE ID—the CSR’s own SANs are ignored for URI purposes.
 
-## 4. The Identity Intermediate Issuer Certificate
+여기서 identity 값은 SPIFFE ID(spiffe://<trust-domain>/ns/<ns>/sa/<sa>)이며, 컨트롤 플레인은 이를 사용해 URI SAN이 해당 SPIFFE ID인 인증서를 발급합니다(CSR의 SAN은 무시).
 
-The intermediate issuer certificate is stored in the `linkerd-identity-issuer` secret in the `linkerd` namespace. When the Identity service receives a CSR, it first validates the token by creating a `TokenReview` against the `authentication.k8s.io/v1/tokenreviews` endpoint of the Kubernetes API with:
-- The ServiceAccount token from the CSR 
-- The `identity.l5d.io` audience. (The audience restriction ensures only tokens issued for Linkerd are accepted.)
+## 4. 아이덴티티 중간(issuer) 인증서
 
-If the validation fails or the token is not authentcated the validation fails immediately, otherwise, the API server will go ahead and verify the token’s signature, expiration, issuer, and intended audience.
+중간 발급자 인증서는 `linkerd` 네임스페이스의 `linkerd-identity-issuer` 시크릿(Secret)에 저장됩니다. Identity 서비스가 CSR을 수신하면, 먼저 다음 정보를 이용해 Kubernetes API의 `authentication.k8s.io/v1/tokenreviews` 엔드포인트에 `TokenReview`를 생성해 토큰을 검증합니다.
+- CSR에 포함된 ServiceAccount 토큰
+- `identity.l5d.io` 오디언스 (이 오디언스 제한으로 Linkerd용으로 발급된 토큰만 허용됩니다)
 
-The Identity service then parses the ServiceAccount reference (system:serviceaccount:<namespace>:<name>), verify that each segment is a valid DNS-1123 label and constructs the SPIFFE URI under the configured trust domain.
+검증에 실패하거나 토큰이 인증되지 않은 경우에는 즉시 실패로 처리됩니다. 반대로 초기 검증이 통과하면 API 서버가 토큰의 서명·만료 시각·발급자·대상 오디언스를 차례로 확인합니다.
 
-Next, it builds an x509.Certificate template with:
-- The public key from the CSR
-- The SAN set to the SPIFFE URI
-- A validity period from now until 24 hours later (default)
+그다음 Identity 서비스는 ServiceAccount 참조(system:serviceaccount:<namespace>:<name>)를 파싱해 각 세그먼트가 DNS-1123 레이블 규칙을 준수하는지 확인한 뒤, 설정된 트러스트 도메인 아래에서 SPIFFE URI를 구성합니다.
 
-It signs the certificate using `x509.CreateCertificate(rand.Reader, &template, issuerCert, csr.PublicKey, issuerKey)` and sent back to the proxy.
 
-To see this workflowby changing the verbosity of the `indentity` pod to `debug`:
+다음 단계에서 x509.Certificate 템플릿을 만듭니다.
+- CSR에서 가져온 공개키
+- SPIFFE URI로 설정된 SAN
+- 생성 시점부터 24시간 뒤까지의 유효 기간(기본값)
+
+그런 다음 `x509.CreateCertificate(rand.Reader, &template, issuerCert, csr.PublicKey, issuerKey)`를 사용해 인증서에 서명하고, 이를 프록시에 반환합니다.
+
+이 과정을 확인하려면 `identity` 파드의 로그 레벨을 `debug`로 높여보세요.
+
 ```
 kubectl logs -n linkerd       linkerd-identity-56d78cdd86-8c64w 
 Defaulted container "identity" out of: identity, linkerd-proxy, linkerd-init (init)
@@ -178,7 +186,7 @@ time="2025-05-21T12:11:37Z" level=info msg="issued certificate for linkerd-ident
 
 ## 5. The Proxy Leaf Certificate
 
-Once received, the proxy loads the certificate into its in-memory store and begins using it for mTLS. It automatically renews the certificate at approximately 70% of its TTL, requesting a new CSR to rotate the certificate seamlessly.
+프록시는 발급받은 인증서를 메모리 스토어에 적재해 즉시 mTLS에 사용하며, TTL의 약 70 % 시점에서 자동 갱신합니다.
 
 ```
 fn refresh_in(config: &Config, expiry: SystemTime) -> Duration {
@@ -191,3 +199,5 @@ fn refresh_in(config: &Config, expiry: SystemTime) -> Duration {
     }
 }
 ```
+
+이 과정을 통해 워크로드는 다운타임 없이 인증서를 회전하며, 메시 전반의 안전한 통신이 유지됩니다.

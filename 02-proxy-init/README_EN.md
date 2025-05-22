@@ -103,7 +103,7 @@ Init Containers:
     ...
 ```
 
-## 4. Deploy a debug container
+## 5. Deploy a debug container
 
 To inspect iptables rules without restarting the pod, deploy a debug container running Ubuntu with the `netadmin` profile, which grants the necessary `NET_ADMIN` capability:
 
@@ -122,7 +122,7 @@ Install `iptables` inside the container:
 apt-get update && apt-get install -y iptables
 ```
 
-# 5. Check the iptables
+# 6. Check the iptables
 
 Now that the debug container is running and iptables is installed, you can inspect the chain rules. Let's start with the inbound `PREROUTING` chain
 
