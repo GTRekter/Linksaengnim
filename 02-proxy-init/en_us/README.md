@@ -122,7 +122,7 @@ Install `iptables` inside the container:
 apt-get update && apt-get install -y iptables
 ```
 
-# 6. Check the iptables
+## 6. Check the iptables
 
 Now that the debug container is running and iptables is installed, you can inspect the chain rules. Let's start with the inbound `PREROUTING` chain
 

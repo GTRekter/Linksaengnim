@@ -122,7 +122,7 @@ kubectl debug -n linkerd deploy/linkerd-destination \
 apt-get update && apt-get install -y iptables
 ```
 
-# 6. iptables 확인
+## 6. iptables 확인
 
 이제 디버그 컨테이너에서 iptables 체인을 볼 수 있습니다. 먼저 인바운드 `PREROUTING` 체인을 확인해 봅시다.
 
