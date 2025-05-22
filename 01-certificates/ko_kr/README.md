@@ -2,6 +2,8 @@
 
 Linkerd는 메시된(pod 간 연결된) 모든 TCP 트래픽에 대해 자동으로 mTLS를 활성화합니다. 이를 위해 제어 플레인이 정상적으로 작동하려면 몇 가지 인증서가 필요합니다. 이 인증서는 설치 시 제공하거나 Cert-Manager 및 Trust-Manager와 같은 타사 도구를 사용하여 설정할 수 있습니다.
 
+![Certificates](../assets/certificates.png)
+
 ## 참고 자료
 - https://linkerd.io/2-edge/tasks/generate-certificates/
 - https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/

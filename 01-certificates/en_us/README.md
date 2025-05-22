@@ -2,6 +2,8 @@
 
 Linkerd automatically enable mTLS for all TCP traffic between meshed pods. To do so, it relies on several certificates that should be in place for the control plane to work as expected. You can either provide them during the installation or using thirds party tools like Cert-Manager and Trust-Manager. 
 
+![Certificates](../assets/certificates.png)
+
 ## References
 - https://linkerd.io/2-edge/tasks/generate-certificates/
 - https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/
