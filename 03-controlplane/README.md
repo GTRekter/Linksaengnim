@@ -1,8 +1,8 @@
-# Service Mesh
+# Control Plane
 
 Linkerd Service Mesh has a two layer archtitecture with:
-- Control Plane: composed by the destination, policy, identity, sp-validatior and proxy-injector controllers
-- Data Plane: composed by the proxies running alongside the applications in the same pod and taking care of managin all the inbound/outbound communications.
+- **Control Plane:** composed by the destination, policy, identity, sp-validatior and proxy-injector controllers
+- **Data Plane:** composed by the proxies running alongside the applications in the same pod and taking care of managin all the inbound/outbound communications.
 
 The Control Plane and the proxies communicate via gRPC, while the proxies communivate via HTTP/2.
 
@@ -20,7 +20,7 @@ The Control Plane and the proxies communicate via gRPC, while the proxies commun
 
 # Tutorial
 
-1. Create a Local Kubernetes Cluster
+## 1. Create a Local Kubernetes Cluster
 
 Use k3d and your cluster.yaml to spin up a lightweight Kubernetes cluster:
 
@@ -29,7 +29,7 @@ k3d cluster create --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
 
-2. Generate Identity Certificates
+## 2. Generate Identity Certificates
 
 Linkerd requires a trust anchor (root CA) and an issuer (intermediate CA) for mTLS identity.
 
@@ -47,7 +47,7 @@ step certificate create identity.linkerd.cluster.local ./certificates/issuer.crt
     --ca-key ./certificates/ca.key
 ```
 
-3. Install Linkerd via Helm
+## 3. Install Linkerd via Helm
 
 ```
 helm repo add linkerd-edge https://helm.linkerd.io/edge
@@ -65,7 +65,7 @@ helm upgrade --install linkerd-control-plane \
   linkerd-edge/linkerd-control-plane
 ```
 
-4. Linkerd Destination 
+## 4. Linkerd Destination 
 
 Linkerd destination index the data retrieved by the Kuberentes API so that when a proxy is asking for these informations they are available.
 
@@ -107,7 +107,7 @@ time="2025-05-19T08:53:23Z" level=info msg="PUT https://10.247.0.1:443/apis/coor
 time="2025-05-19T08:53:25Z" level=info msg="PUT https://10.247.0.1:443/apis/coordination.k8s.io/v1/namespaces/linkerd/leases/linkerd-destination-endpoint-write 200 OK in 6 milliseconds"
 ```
 
-5. Linkerd Proxy-Injector
+## 5. Linkerd Proxy-Injector
 
 It's using a mutating webhook to intercept the requests to the kubernetes API when a new pod is created, then check the annotations and if there is `linkerd.io/injected: enabled` then inject a Linkerd proxy and ProxyInit containers.
 

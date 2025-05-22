@@ -1,0 +1,22 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: "cluster"
+servers: 1
+agents: 0
+image: rancher/k3s:v1.33.0-k3s1
+network: playground
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters: ["server:*"]
+      - arg: --cluster-cidr=10.23.0.0/16
+        nodeFilters: ["server:*"]
+      - arg: --service-cidr=10.247.0.0/16
+        nodeFilters: ["server:*"]
+      - arg: --debug
+        nodeFilters: ["server:*"]
+ports:
+  - port: 8081:80
+    nodeFilters: ["loadbalancer"]

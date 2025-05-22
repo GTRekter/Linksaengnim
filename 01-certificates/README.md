@@ -28,7 +28,43 @@ k3d cluster create --kubeconfig-update-default \
   -c ./cluster.yaml
 ```
 
-## 2. The Root Trust Anchor Certificate
+## 2. Generate Identity Certificates
+
+Linkerd requires a trust anchor (root CA) and an issuer (intermediate CA) for mTLS identity.
+
+```
+step certificate create root.linkerd.cluster.local ./certificates/ca.crt ./certificates/ca.key \
+    --profile root-ca \
+    --no-password \
+    --insecure
+step certificate create identity.linkerd.cluster.local ./certificates/issuer.crt ./certificates/issuer.key \
+    --profile intermediate-ca \
+    --not-after 8760h \
+    --no-password \
+    --insecure \
+    --ca ./certificates/ca.crt \
+    --ca-key ./certificates/ca.key
+```
+
+## 3. Install Linkerd via Helm
+
+```
+helm repo add linkerd-edge https://helm.linkerd.io/edge
+helm repo update
+helm install linkerd-crds linkerd-edge/linkerd-crds \
+  -n linkerd --create-namespace --set installGatewayAPI=true
+helm upgrade --install linkerd-control-plane \
+  -n linkerd \
+  --set-file identityTrustAnchorsPEM=./certificates/ca.crt \
+  --set-file identity.issuer.tls.crtPEM=./certificates/issuer.crt \
+  --set-file identity.issuer.tls.keyPEM=./certificates/issuer.key \
+  --set controllerLogLevel=debug \
+  --set policyController.logLevel=debug \
+  --set policyController.logLevel=debug \
+  linkerd-edge/linkerd-control-plane
+```
+
+## 3. The Root Trust Anchor Certificate
 
 Linkerd’s Root Trust Anchor is a public CA certificate that establishes the ultimate point of trust for all service-mesh certificates. It never issues workload certificates directly. Instead, it signs intermediate CA certificates, which in turn issue certificates for workloads. This division ensures that clusters (or multiple clusters) can each run their own issuer yet validate against the same root anchor, maintaining mesh-wide trust without exposing the root key in day-to-day workflows.
 
@@ -106,7 +142,7 @@ let api::CertifyResponse { leaf_certificate, intermediate_certificates, valid_un
 ```
 Here, identity carries the SPIFFE ID (spiffe://<trust-domain>/ns/<ns>/sa/<sa>) and the control-plane uses that to issue you a cert whose URI SAN is set to your SPIFFE ID—the CSR’s own SANs are ignored for URI purposes.
 
-## 3. The Identity Intermediate Issuer Certificate
+## 4. The Identity Intermediate Issuer Certificate
 
 The intermediate issuer certificate is stored in the `linkerd-identity-issuer` secret in the `linkerd` namespace. When the Identity service receives a CSR, it first validates the token by creating a `TokenReview` against the `authentication.k8s.io/v1/tokenreviews` endpoint of the Kubernetes API with:
 - The ServiceAccount token from the CSR 
@@ -140,7 +176,7 @@ time="2025-05-21T12:11:37Z" level=info msg="POST https://10.247.0.1:443/apis/aut
 time="2025-05-21T12:11:37Z" level=info msg="issued certificate for linkerd-identity.linkerd.serviceaccount.identity.linkerd.cluster.local until 2025-05-22 12:11:57 +0000 UTC: a7048ff55002e726894ad92eccfd6738fcbc72b496d58ef3071a73c866c8e311"
 ```
 
-## 4. The Proxy Leaf Certificate
+## 5. The Proxy Leaf Certificate
 
 Once received, the proxy loads the certificate into its in-memory store and begins using it for mTLS. It automatically renews the certificate at approximately 70% of its TTL, requesting a new CSR to rotate the certificate seamlessly.
 
